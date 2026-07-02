@@ -1,5 +1,6 @@
 (function () {
   const STORAGE_KEY = "my-diary.entries.v1";
+  const PRIVACY_KEY = "my-diary.privacy.v1";
   const MILESTONES = [
     { count: 30, text: "呼吸が文字になってきた" },
     { count: 100, text: "もう流れがある" },
@@ -36,6 +37,7 @@
     toast: document.getElementById("toast"),
     todayButton: document.getElementById("todayButton"),
     focusButton: document.getElementById("focusButton"),
+    privacyButton: document.getElementById("privacyButton"),
     exportButton: document.getElementById("exportButton"),
     backupButton: document.getElementById("backupButton"),
     importInput: document.getElementById("importInput"),
@@ -54,6 +56,7 @@
   let sessionStartedAt = Date.now();
   let reachedMilestones = new Set();
   let visibleMonth = new Date();
+  let privacyMode = readPrivacyMode();
 
   function readEntries() {
     try {
@@ -66,6 +69,31 @@
 
   function writeEntries() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function readPrivacyMode() {
+    try {
+      return localStorage.getItem(PRIVACY_KEY) === "true";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setPrivacyMode(active, shouldAnnounce) {
+    privacyMode = active;
+    el.body.classList.toggle("is-private", active);
+    el.privacyButton.setAttribute("aria-pressed", String(active));
+    el.privacyButton.querySelector("span").textContent = active ? "◐" : "●";
+
+    try {
+      localStorage.setItem(PRIVACY_KEY, String(active));
+    } catch (error) {
+      // The visual state still works even if preference storage is unavailable.
+    }
+
+    if (shouldAnnounce) {
+      showToast(active ? "隠した" : "戻した");
+    }
   }
 
   function dateKey(date) {
@@ -556,6 +584,19 @@
       el.body.classList.toggle("is-focus", active);
       el.focusButton.setAttribute("aria-pressed", String(active));
     });
+    el.privacyButton.addEventListener("click", () => {
+      setPrivacyMode(!privacyMode, true);
+    });
+    el.entryInput.addEventListener("focus", () => {
+      if (privacyMode) {
+        setPrivacyMode(false, true);
+      }
+    });
+    el.titleInput.addEventListener("focus", () => {
+      if (privacyMode) {
+        setPrivacyMode(false, true);
+      }
+    });
     el.exportButton.addEventListener("click", exportCurrentEntry);
     el.backupButton.addEventListener("click", exportAllEntries);
     el.importInput.addEventListener("change", () => importBackup(el.importInput.files[0]));
@@ -582,5 +623,6 @@
 
   bindEvents();
   loadEntry(currentDate);
+  setPrivacyMode(privacyMode, false);
   window.setInterval(tick, 30000);
 }());

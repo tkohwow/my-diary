@@ -165,6 +165,11 @@ h2 {
   transform: translateY(-1px);
 }
 
+.icon-button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--mood) 62%, transparent);
+  background: color-mix(in srgb, var(--mood) 16%, rgba(255, 255, 255, 0.72));
+}
+
 .quiet-button:focus-visible,
 .icon-button:focus-visible,
 .search-input:focus-visible,
@@ -645,6 +650,41 @@ body.is-focus .topbar:focus-within,
 body.is-focus .memory-strip:focus-within,
 body.is-focus .pulse-panel:focus-within {
   opacity: 1;
+}
+
+body.is-private .title-input,
+body.is-private .entry-input,
+body.is-private .entry-card strong,
+body.is-private .entry-card span,
+body.is-private .tag-pill,
+body.is-private .phrase-line {
+  color: transparent;
+  text-shadow: 0 0 12px rgba(32, 35, 31, 0.48);
+}
+
+body.is-private .title-input,
+body.is-private .entry-input {
+  caret-color: transparent;
+}
+
+body.is-private .entry-card,
+body.is-private .month-day.has-entry::after {
+  filter: blur(3px);
+}
+
+body.is-private .editor-pane::after {
+  content: "隠しています";
+  position: absolute;
+  right: 0;
+  bottom: 18px;
+  z-index: 2;
+  border: 1px solid color-mix(in srgb, var(--mood) 32%, transparent);
+  border-radius: 8px;
+  padding: 8px 11px;
+  color: color-mix(in srgb, var(--mood) 72%, var(--ink));
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.82rem;
+  pointer-events: none;
 }
 
 @media (max-width: 860px) {
