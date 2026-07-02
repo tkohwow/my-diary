@@ -30,10 +30,17 @@
     flowBar: document.getElementById("flowBar"),
     inkField: document.getElementById("inkField"),
     entryList: document.getElementById("entryList"),
+    searchInput: document.getElementById("searchInput"),
+    monthGrid: document.getElementById("monthGrid"),
+    monthLabel: document.getElementById("monthLabel"),
     toast: document.getElementById("toast"),
     todayButton: document.getElementById("todayButton"),
     focusButton: document.getElementById("focusButton"),
     exportButton: document.getElementById("exportButton"),
+    backupButton: document.getElementById("backupButton"),
+    importInput: document.getElementById("importInput"),
+    prevMonthButton: document.getElementById("prevMonthButton"),
+    nextMonthButton: document.getElementById("nextMonthButton"),
     clearButton: document.getElementById("clearButton"),
     moodButtons: Array.from(document.querySelectorAll(".mood-swatch"))
   };
@@ -46,6 +53,7 @@
   let phraseTimer = 0;
   let sessionStartedAt = Date.now();
   let reachedMilestones = new Set();
+  let visibleMonth = new Date();
 
   function readEntries() {
     try {
@@ -98,12 +106,13 @@
     const entry = ensureEntry(key);
     el.titleInput.value = entry.title || "";
     el.entryInput.value = entry.text || "";
+    visibleMonth = new Date(dateFromKey(key).getFullYear(), dateFromKey(key).getMonth(), 1);
     sessionStartedAt = Date.now();
     reachedMilestones = new Set(MILESTONES.filter((item) => charLength(entry.text) >= item.count).map((item) => item.count));
     setMood(entry.mood || "moss", false);
     updateDate();
     updateStats();
-    renderEntries();
+    renderMemory();
     updatePhrase();
     el.saveStatus.textContent = "保存済み";
   }
@@ -128,7 +137,7 @@
       collectCurrentEntry();
       writeEntries();
       el.saveStatus.textContent = "保存済み";
-      renderEntries();
+      renderMemory();
     } catch (error) {
       el.saveStatus.textContent = "保存失敗";
     }
@@ -276,18 +285,85 @@
     }
   }
 
+  function renderMemory() {
+    renderMonth();
+    renderEntries();
+  }
+
+  function renderMonth() {
+    const year = visibleMonth.getFullYear();
+    const month = visibleMonth.getMonth();
+    const today = dateKey(new Date());
+    const days = new Date(year, month + 1, 0).getDate();
+    const offset = new Date(year, month, 1).getDay();
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+
+    el.monthLabel.textContent = new Intl.DateTimeFormat("ja-JP", {
+      year: "numeric",
+      month: "long"
+    }).format(visibleMonth);
+    el.monthGrid.innerHTML = "";
+
+    weekdays.forEach((weekday) => {
+      const node = document.createElement("div");
+      node.className = "weekday";
+      node.textContent = weekday;
+      el.monthGrid.appendChild(node);
+    });
+
+    for (let index = 0; index < offset; index += 1) {
+      const blank = document.createElement("div");
+      blank.className = "month-blank";
+      el.monthGrid.appendChild(blank);
+    }
+
+    for (let day = 1; day <= days; day += 1) {
+      const key = keyFromParts(year, month, day);
+      const entry = entries[key];
+      const hasEntry = Boolean(entry && (entry.title || entry.text));
+      const button = document.createElement("button");
+
+      button.type = "button";
+      button.className = "month-day";
+      button.textContent = String(day);
+      button.classList.toggle("has-entry", hasEntry);
+      button.classList.toggle("is-current", key === currentDate);
+      button.classList.toggle("is-today", key === today);
+      button.setAttribute("aria-label", `${formatDate(key)}${hasEntry ? " の日記" : ""}`);
+
+      if (entry && entry.mood && moodColors[entry.mood]) {
+        button.style.setProperty("--day-mood", moodColors[entry.mood]);
+      }
+
+      button.addEventListener("click", () => {
+        saveNow();
+        loadEntry(key);
+        el.entryInput.focus();
+      });
+      el.monthGrid.appendChild(button);
+    }
+  }
+
+  function keyFromParts(year, monthIndex, day) {
+    const month = String(monthIndex + 1).padStart(2, "0");
+    const date = String(day).padStart(2, "0");
+    return `${year}-${month}-${date}`;
+  }
+
   function renderEntries() {
+    const query = normalizeSearch(el.searchInput.value);
     const items = Object.entries(entries)
       .filter(([, entry]) => entry && (entry.title || entry.text))
+      .filter(([key, entry]) => matchesSearch(key, entry, query))
       .sort(([a], [b]) => b.localeCompare(a))
-      .slice(0, 18);
+      .slice(0, 24);
 
     el.entryList.innerHTML = "";
 
     if (items.length === 0) {
       const empty = document.createElement("p");
-      empty.className = "phrase-line";
-      empty.textContent = "まだ白い";
+      empty.className = "phrase-line empty-memory";
+      empty.textContent = query ? "見つからない" : "まだ白い";
       el.entryList.appendChild(empty);
       return;
     }
@@ -296,6 +372,7 @@
       const card = document.createElement("button");
       const title = entry.title || firstLine(entry.text) || "題名なし";
       const snippet = entry.text ? entry.text.replace(/\s+/g, " ").trim() : " ";
+      const tags = extractTags(entry.text);
 
       card.type = "button";
       card.className = "entry-card";
@@ -307,6 +384,19 @@
       `;
       card.querySelector("strong").textContent = clip(title, 24);
       card.querySelector("span").textContent = clip(snippet, 58);
+
+      if (tags.length > 0) {
+        const tagRow = document.createElement("div");
+        tagRow.className = "tag-row";
+        tags.slice(0, 3).forEach((tag) => {
+          const tagNode = document.createElement("b");
+          tagNode.className = "tag-pill";
+          tagNode.textContent = tag;
+          tagRow.appendChild(tagNode);
+        });
+        card.appendChild(tagRow);
+      }
+
       card.addEventListener("click", () => {
         saveNow();
         loadEntry(key);
@@ -314,6 +404,29 @@
       });
       el.entryList.appendChild(card);
     });
+  }
+
+  function normalizeSearch(value) {
+    return value.trim().toLocaleLowerCase("ja-JP");
+  }
+
+  function matchesSearch(key, entry, query) {
+    if (!query) {
+      return true;
+    }
+
+    return [
+      key,
+      formatDate(key),
+      entry.title || "",
+      entry.text || "",
+      extractTags(entry.text).join(" ")
+    ].join(" ").toLocaleLowerCase("ja-JP").includes(query);
+  }
+
+  function extractTags(text) {
+    const matches = (text || "").match(/#[^\s#。、！？!?]+/g) || [];
+    return Array.from(new Set(matches)).slice(0, 8);
   }
 
   function firstLine(text) {
@@ -337,6 +450,79 @@
     showToast("書き出した");
   }
 
+  function exportAllEntries() {
+    saveNow();
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      entries
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+    link.download = `my-diary-backup-${dateKey(new Date())}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+    showToast("バックアップした");
+  }
+
+  async function importBackup(file) {
+    if (!file) {
+      return;
+    }
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw);
+      const importedEntries = sanitizeEntries(parsed.entries || parsed);
+      const count = Object.keys(importedEntries).length;
+
+      if (count === 0) {
+        showToast("復元できる日記がない");
+        return;
+      }
+
+      if (!confirm(`${count}件の日記を復元します。同じ日付は上書きしますか？`)) {
+        return;
+      }
+
+      saveNow();
+      entries = { ...entries, ...importedEntries };
+      writeEntries();
+      const latest = Object.keys(importedEntries).sort().pop() || currentDate;
+      loadEntry(latest);
+      showToast("復元した");
+    } catch (error) {
+      showToast("復元に失敗した");
+    } finally {
+      el.importInput.value = "";
+    }
+  }
+
+  function sanitizeEntries(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return {};
+    }
+
+    return Object.entries(value).reduce((safe, [key, entry]) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || !entry || typeof entry !== "object") {
+        return safe;
+      }
+
+      safe[key] = {
+        title: String(entry.title || "").slice(0, 120),
+        text: String(entry.text || ""),
+        mood: moodColors[entry.mood] ? entry.mood : "moss",
+        createdAt: entry.createdAt || new Date().toISOString(),
+        updatedAt: entry.updatedAt || new Date().toISOString()
+      };
+      return safe;
+    }, {});
+  }
+
   function clearCurrentEntry() {
     const entry = ensureEntry(currentDate);
     if (!entry.title && !entry.text) {
@@ -358,7 +544,7 @@
     el.titleInput.addEventListener("input", () => {
       updateStats();
       scheduleSave();
-      renderEntries();
+      renderMemory();
     });
     el.todayButton.addEventListener("click", () => {
       saveNow();
@@ -371,6 +557,17 @@
       el.focusButton.setAttribute("aria-pressed", String(active));
     });
     el.exportButton.addEventListener("click", exportCurrentEntry);
+    el.backupButton.addEventListener("click", exportAllEntries);
+    el.importInput.addEventListener("change", () => importBackup(el.importInput.files[0]));
+    el.searchInput.addEventListener("input", renderEntries);
+    el.prevMonthButton.addEventListener("click", () => {
+      visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1);
+      renderMonth();
+    });
+    el.nextMonthButton.addEventListener("click", () => {
+      visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+      renderMonth();
+    });
     el.clearButton.addEventListener("click", clearCurrentEntry);
     el.moodButtons.forEach((button) => {
       button.addEventListener("click", () => setMood(button.dataset.mood, true));

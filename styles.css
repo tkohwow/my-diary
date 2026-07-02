@@ -79,7 +79,10 @@ button {
 .section-head,
 .toolbar,
 .status-line,
-.mood-row {
+.mood-row,
+.memory-tools,
+.month-nav,
+.backup-actions {
   display: flex;
   align-items: center;
 }
@@ -148,6 +151,11 @@ h2 {
   font-weight: 800;
 }
 
+.icon-button.small {
+  width: 34px;
+  min-height: 34px;
+}
+
 .quiet-button:hover,
 .icon-button:hover,
 .quiet-button:focus-visible,
@@ -159,7 +167,9 @@ h2 {
 
 .quiet-button:focus-visible,
 .icon-button:focus-visible,
+.search-input:focus-visible,
 .mood-swatch:focus-visible,
+.month-day:focus-visible,
 .entry-card:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -394,11 +404,114 @@ h2 {
   padding: 24px 2px 0;
 }
 
+.memory-tools {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.search-input {
+  width: min(100%, 270px);
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 13px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.52);
+  outline: 0;
+}
+
+.search-input::placeholder {
+  color: rgba(32, 35, 31, 0.42);
+}
+
+.month-nav,
+.backup-actions {
+  gap: 8px;
+}
+
+.month-nav strong {
+  min-width: 112px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.file-button {
+  display: inline-grid;
+  place-items: center;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.weekday,
+.month-day,
+.month-blank {
+  min-height: 38px;
+}
+
+.weekday {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.month-day {
+  position: relative;
+  border: 1px solid rgba(32, 35, 31, 0.09);
+  border-radius: 8px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.36);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.month-day:hover,
+.month-day.is-current {
+  border-color: color-mix(in srgb, var(--mood) 46%, transparent);
+  background: rgba(255, 255, 255, 0.72);
+  transform: translateY(-1px);
+}
+
+.month-day.has-entry::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 7px;
+  width: 5px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--day-mood, var(--mood));
+  transform: translateX(-50%);
+}
+
+.month-day.is-today {
+  color: color-mix(in srgb, var(--accent) 72%, var(--ink));
+  font-weight: 800;
+}
+
 .entry-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .entry-card {
@@ -445,6 +558,30 @@ h2 {
   line-height: 1.48;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.tag-pill {
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--mood) 28%, transparent);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: color-mix(in srgb, var(--mood) 72%, var(--ink));
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-memory {
+  margin: 0;
+  grid-column: 1 / -1;
 }
 
 .toast {
@@ -582,6 +719,28 @@ body.is-focus .pulse-panel:focus-within {
   .memory-strip {
     padding-right: 12px;
     padding-left: 12px;
+  }
+
+  .memory-tools,
+  .search-input,
+  .backup-actions {
+    width: 100%;
+  }
+
+  .month-nav {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .backup-actions .quiet-button,
+  .backup-actions .file-button {
+    flex: 1 1 0;
+  }
+
+  .weekday,
+  .month-day,
+  .month-blank {
+    min-height: 34px;
   }
 
   .entry-list {

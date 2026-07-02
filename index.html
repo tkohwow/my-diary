@@ -94,6 +94,27 @@
           <h2>Memory</h2>
           <button id="clearButton" class="quiet-button danger" type="button">今日を空にする</button>
         </div>
+        <div class="memory-tools">
+          <input
+            id="searchInput"
+            class="search-input"
+            type="search"
+            autocomplete="off"
+            placeholder="記憶を探す"
+            aria-label="日記を検索"
+          >
+          <div class="month-nav" aria-label="月を選ぶ">
+            <button id="prevMonthButton" class="icon-button small" type="button" aria-label="前の月">‹</button>
+            <strong id="monthLabel"></strong>
+            <button id="nextMonthButton" class="icon-button small" type="button" aria-label="次の月">›</button>
+          </div>
+          <div class="backup-actions">
+            <button id="backupButton" class="quiet-button" type="button">バックアップ</button>
+            <label class="quiet-button file-button" for="importInput">復元</label>
+            <input id="importInput" class="visually-hidden" type="file" accept="application/json,.json">
+          </div>
+        </div>
+        <div id="monthGrid" class="month-grid" aria-label="月の記録"></div>
         <div id="entryList" class="entry-list"></div>
       </section>
     </main>
