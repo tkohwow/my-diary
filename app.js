@@ -1,6 +1,7 @@
 (function () {
   const STORAGE_KEY = "my-diary.entries.v1";
   const PRIVACY_KEY = "my-diary.privacy.v1";
+  const IDLE_PRIVACY_DELAY = 120000;
   const MILESTONES = [
     { count: 30, text: "呼吸が文字になってきた" },
     { count: 100, text: "もう流れがある" },
@@ -54,6 +55,7 @@
   let writingTimer = 0;
   let toastTimer = 0;
   let phraseTimer = 0;
+  let idleTimer = 0;
   let sessionStartedAt = Date.now();
   let reachedMilestones = new Set();
   let visibleMonth = new Date();
@@ -111,6 +113,28 @@
     if (shouldAnnounce) {
       showToast(active ? "隠した" : "戻した");
     }
+  }
+
+  function hasDiaryText() {
+    return Boolean(el.titleInput.value.trim() || el.entryInput.value.trim());
+  }
+
+  function scheduleIdlePrivacy() {
+    clearTimeout(idleTimer);
+
+    if (privacyMode || !hasDiaryText()) {
+      return;
+    }
+
+    idleTimer = window.setTimeout(() => {
+      if (hasDiaryText()) {
+        setPrivacyMode(true, true);
+      }
+    }, IDLE_PRIVACY_DELAY);
+  }
+
+  function wakeInteraction() {
+    scheduleIdlePrivacy();
   }
 
   function dateKey(date) {
@@ -200,6 +224,7 @@
     schedulePhrase();
     scheduleSave();
     checkMilestones();
+    scheduleIdlePrivacy();
   }
 
   function charLength(text) {
@@ -590,6 +615,7 @@
       updateStats();
       scheduleSave();
       renderMemory();
+      scheduleIdlePrivacy();
     });
     el.todayButton.addEventListener("click", () => {
       saveNow();
@@ -608,11 +634,13 @@
       if (privacyMode) {
         setPrivacyMode(false, true);
       }
+      scheduleIdlePrivacy();
     });
     el.titleInput.addEventListener("focus", () => {
       if (privacyMode) {
         setPrivacyMode(false, true);
       }
+      scheduleIdlePrivacy();
     });
     el.exportButton.addEventListener("click", exportCurrentEntry);
     el.backupButton.addEventListener("click", exportAllEntries);
@@ -632,6 +660,16 @@
     });
     window.addEventListener("online", updateConnectionStatus);
     window.addEventListener("offline", updateConnectionStatus);
+    ["pointerdown", "keydown", "scroll"].forEach((eventName) => {
+      window.addEventListener(eventName, wakeInteraction, { passive: true });
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && hasDiaryText()) {
+        setPrivacyMode(true, false);
+      } else {
+        scheduleIdlePrivacy();
+      }
+    });
     window.addEventListener("beforeunload", saveNow);
   }
 
@@ -643,6 +681,7 @@
   bindEvents();
   loadEntry(currentDate);
   setPrivacyMode(privacyMode, false);
+  scheduleIdlePrivacy();
   updateConnectionStatus();
   registerServiceWorker();
   window.setInterval(tick, 30000);
