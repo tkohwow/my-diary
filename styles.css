@@ -287,6 +287,27 @@ h2 {
   font-size: 0.82rem;
 }
 
+.status-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.offline-status {
+  border: 1px solid color-mix(in srgb, var(--mood) 28%, transparent);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: color-mix(in srgb, var(--mood) 70%, var(--ink));
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.offline-status.is-offline {
+  border-color: rgba(143, 57, 47, 0.24);
+  color: #8f392f;
+}
+
 .score-ring {
   display: grid;
   place-items: center;

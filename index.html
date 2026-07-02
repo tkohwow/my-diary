@@ -3,7 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#426a53">
     <title>My Diary</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -51,7 +53,10 @@
           <aside class="pulse-panel" aria-label="今日の状態">
             <div class="status-line">
               <span id="saveStatus">保存済み</span>
-              <time id="timeLabel" datetime=""></time>
+              <span class="status-cluster">
+                <span id="offlineStatus" class="offline-status">online</span>
+                <time id="timeLabel" datetime=""></time>
+              </span>
             </div>
 
             <div class="score-ring" aria-label="文字数">

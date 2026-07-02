@@ -23,6 +23,7 @@
     titleInput: document.getElementById("titleInput"),
     entryInput: document.getElementById("entryInput"),
     saveStatus: document.getElementById("saveStatus"),
+    offlineStatus: document.getElementById("offlineStatus"),
     charCount: document.getElementById("charCount"),
     minutesCount: document.getElementById("minutesCount"),
     lineCount: document.getElementById("lineCount"),
@@ -69,6 +70,22 @@
 
   function writeEntries() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
+    navigator.serviceWorker.register("./sw.js").catch(() => {
+      // Offline support is helpful, but the diary remains usable without it.
+    });
+  }
+
+  function updateConnectionStatus() {
+    const online = navigator.onLine;
+    el.offlineStatus.textContent = online ? "online" : "offline";
+    el.offlineStatus.classList.toggle("is-offline", !online);
   }
 
   function readPrivacyMode() {
@@ -613,6 +630,8 @@
     el.moodButtons.forEach((button) => {
       button.addEventListener("click", () => setMood(button.dataset.mood, true));
     });
+    window.addEventListener("online", updateConnectionStatus);
+    window.addEventListener("offline", updateConnectionStatus);
     window.addEventListener("beforeunload", saveNow);
   }
 
@@ -624,5 +643,7 @@
   bindEvents();
   loadEntry(currentDate);
   setPrivacyMode(privacyMode, false);
+  updateConnectionStatus();
+  registerServiceWorker();
   window.setInterval(tick, 30000);
 }());

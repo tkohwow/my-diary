@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="My Diary">
+  <rect width="512" height="512" rx="96" fill="#f7f5ef"/>
+  <path d="M128 96h256c24 0 44 20 44 44v260c0 9-7 16-16 16H116c-18 0-32-14-32-32V140c0-24 20-44 44-44Z" fill="#426a53"/>
+  <path d="M140 128h220c15 0 28 13 28 28v220H132c-9 0-16-7-16-16V152c0-13 11-24 24-24Z" fill="#fffdf8"/>
+  <path d="M164 184h152M164 232h184M164 280h132" stroke="#426a53" stroke-width="20" stroke-linecap="round"/>
+  <path d="M112 376h276" stroke="#c6a24a" stroke-width="20" stroke-linecap="round"/>
+  <circle cx="372" cy="124" r="48" fill="#b94f40"/>
+</svg>
