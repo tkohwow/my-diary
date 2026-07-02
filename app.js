@@ -37,7 +37,9 @@
     monthGrid: document.getElementById("monthGrid"),
     monthLabel: document.getElementById("monthLabel"),
     toast: document.getElementById("toast"),
+    prevDayButton: document.getElementById("prevDayButton"),
     todayButton: document.getElementById("todayButton"),
+    nextDayButton: document.getElementById("nextDayButton"),
     focusButton: document.getElementById("focusButton"),
     privacyButton: document.getElementById("privacyButton"),
     exportButton: document.getElementById("exportButton"),
@@ -184,6 +186,14 @@
     renderMemory();
     updatePhrase();
     el.saveStatus.textContent = "保存済み";
+  }
+
+  function shiftDay(delta) {
+    saveNow();
+    const target = dateFromKey(currentDate);
+    target.setDate(target.getDate() + delta);
+    loadEntry(dateKey(target));
+    el.entryInput.focus();
   }
 
   function collectCurrentEntry() {
@@ -617,11 +627,13 @@
       renderMemory();
       scheduleIdlePrivacy();
     });
+    el.prevDayButton.addEventListener("click", () => shiftDay(-1));
     el.todayButton.addEventListener("click", () => {
       saveNow();
       loadEntry(dateKey(new Date()));
       el.entryInput.focus();
     });
+    el.nextDayButton.addEventListener("click", () => shiftDay(1));
     el.focusButton.addEventListener("click", () => {
       const active = !el.body.classList.contains("is-focus");
       el.body.classList.toggle("is-focus", active);

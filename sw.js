@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-diary-cache-v1";
+const CACHE_NAME = "my-diary-cache-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -29,8 +29,9 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
+  const url = new URL(request.url);
 
-  if (request.method !== "GET") {
+  if (request.method !== "GET" || url.origin !== self.location.origin) {
     return;
   }
 
@@ -39,7 +40,7 @@ self.addEventListener("fetch", (event) => {
       fetch(request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put("./", copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy));
           return response;
         })
         .catch(() => caches.match("./index.html"))
@@ -48,12 +49,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => (
-      cached || fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         return response;
       })
-    ))
+      .catch(() => caches.match(request))
   );
 });
