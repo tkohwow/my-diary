@@ -34,6 +34,7 @@
     inkField: document.getElementById("inkField"),
     entryList: document.getElementById("entryList"),
     searchInput: document.getElementById("searchInput"),
+    tagFilters: document.getElementById("tagFilters"),
     monthGrid: document.getElementById("monthGrid"),
     monthLabel: document.getElementById("monthLabel"),
     toast: document.getElementById("toast"),
@@ -406,8 +407,60 @@
   }
 
   function renderMemory() {
+    renderTagFilters();
     renderMonth();
     renderEntries();
+  }
+
+  function renderTagFilters() {
+    const tags = collectTagCounts();
+    const currentQuery = normalizeSearch(el.searchInput.value);
+
+    el.tagFilters.innerHTML = "";
+    el.tagFilters.hidden = tags.length === 0;
+
+    tags.forEach(({ tag, count }) => {
+      const button = document.createElement("button");
+      const isActive = currentQuery === normalizeSearch(tag);
+
+      button.type = "button";
+      button.className = "tag-filter";
+      button.classList.toggle("is-active", isActive);
+      button.textContent = tag;
+      button.setAttribute("aria-pressed", String(isActive));
+      button.setAttribute("aria-label", `${tag} ${count}件`);
+      button.addEventListener("click", () => {
+        el.searchInput.value = isActive ? "" : tag;
+        renderTagFilters();
+        renderEntries();
+
+        if (!isActive) {
+          showToast(`${tag}で絞り込み`);
+        }
+      });
+      el.tagFilters.appendChild(button);
+    });
+  }
+
+  function collectTagCounts() {
+    const counts = new Map();
+
+    Object.values(entries).forEach((entry) => {
+      if (!entry || (!entry.text && !entry.title)) {
+        return;
+      }
+
+      extractTags(entry.text).forEach((tag) => {
+        const key = normalizeSearch(tag);
+        const item = counts.get(key) || { tag, count: 0 };
+        item.count += 1;
+        counts.set(key, item);
+      });
+    });
+
+    return Array.from(counts.values())
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, "ja-JP"))
+      .slice(0, 12);
   }
 
   function renderMonth() {
@@ -697,7 +750,10 @@
     el.exportButton.addEventListener("click", exportCurrentEntry);
     el.backupButton.addEventListener("click", exportAllEntries);
     el.importInput.addEventListener("change", () => importBackup(el.importInput.files[0]));
-    el.searchInput.addEventListener("input", renderEntries);
+    el.searchInput.addEventListener("input", () => {
+      renderTagFilters();
+      renderEntries();
+    });
     el.prevMonthButton.addEventListener("click", () => {
       visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1);
       renderMonth();
