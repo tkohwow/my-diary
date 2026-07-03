@@ -30,3 +30,10 @@ python -m http.server 5174 --bind 127.0.0.1
 - 一度開いたあとのオフライン表示
 - 1日分の Markdown 書き出し
 - 全日記の JSON バックアップと復元
+
+## キーボード操作
+
+- `Ctrl/Cmd + S`: 保存
+- `Alt + ← / →`: 前日/翌日へ移動
+- `Esc`: のぞき見防止
+- `Ctrl/Cmd + Enter`: Markdown 書き出し

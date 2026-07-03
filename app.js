@@ -139,6 +139,46 @@
     scheduleIdlePrivacy();
   }
 
+  function handleGlobalShortcut(event) {
+    if (event.isComposing) {
+      return;
+    }
+
+    const key = event.key;
+    const commandKey = event.metaKey || event.ctrlKey;
+
+    if (commandKey && key.toLowerCase() === "s") {
+      event.preventDefault();
+      saveNow();
+      showToast("保存した");
+      scheduleIdlePrivacy();
+      return;
+    }
+
+    if (commandKey && key === "Enter") {
+      event.preventDefault();
+      exportCurrentEntry();
+      return;
+    }
+
+    if (event.altKey && key === "ArrowLeft") {
+      event.preventDefault();
+      shiftDay(-1);
+      return;
+    }
+
+    if (event.altKey && key === "ArrowRight") {
+      event.preventDefault();
+      shiftDay(1);
+      return;
+    }
+
+    if (key === "Escape" && hasDiaryText() && !privacyMode) {
+      event.preventDefault();
+      setPrivacyMode(true, true);
+    }
+  }
+
   function dateKey(date) {
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 10);
@@ -675,6 +715,7 @@
     ["pointerdown", "keydown", "scroll"].forEach((eventName) => {
       window.addEventListener(eventName, wakeInteraction, { passive: true });
     });
+    window.addEventListener("keydown", handleGlobalShortcut);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && hasDiaryText()) {
         setPrivacyMode(true, false);
