@@ -59,6 +59,8 @@
   let toastTimer = 0;
   let phraseTimer = 0;
   let idleTimer = 0;
+  let restoreTimer = 0;
+  let lastClearedEntry = null;
   let sessionStartedAt = Date.now();
   let reachedMilestones = new Set();
   let visibleMonth = new Date();
@@ -385,13 +387,29 @@
     }
   }
 
-  function showToast(text) {
+  function showToast(text, options = {}) {
     clearTimeout(toastTimer);
-    el.toast.textContent = text;
+    el.toast.textContent = "";
+    el.toast.classList.toggle("has-action", Boolean(options.actionLabel && typeof options.onAction === "function"));
+
+    const message = document.createElement("span");
+    message.textContent = text;
+    el.toast.appendChild(message);
+
+    if (options.actionLabel && typeof options.onAction === "function") {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "toast-action";
+      button.textContent = options.actionLabel;
+      button.addEventListener("click", options.onAction);
+      el.toast.appendChild(button);
+    }
+
     el.toast.classList.add("is-visible");
     toastTimer = window.setTimeout(() => {
       el.toast.classList.remove("is-visible");
-    }, 1800);
+      el.toast.classList.remove("has-action");
+    }, options.duration || 1800);
   }
 
   function setMood(mood, shouldSave) {
@@ -706,10 +724,46 @@
       return;
     }
 
+    lastClearedEntry = {
+      key: currentDate,
+      entry: { ...entry }
+    };
+    clearTimeout(restoreTimer);
+    restoreTimer = window.setTimeout(() => {
+      lastClearedEntry = null;
+    }, 8000);
+
     delete entries[currentDate];
     writeEntries();
     loadEntry(currentDate);
-    showToast("空にした");
+    showToast("空にした", {
+      actionLabel: "戻す",
+      duration: 8000,
+      onAction: restoreClearedEntry
+    });
+  }
+
+  function restoreClearedEntry() {
+    if (!lastClearedEntry) {
+      return;
+    }
+
+    const existing = entries[lastClearedEntry.key];
+    const hasFreshText = currentDate === lastClearedEntry.key && hasDiaryText();
+    if (hasFreshText || (existing && (existing.title || existing.text))) {
+      lastClearedEntry = null;
+      clearTimeout(restoreTimer);
+      showToast("戻せなかった");
+      return;
+    }
+
+    entries[lastClearedEntry.key] = lastClearedEntry.entry;
+    writeEntries();
+    loadEntry(lastClearedEntry.key);
+    el.entryInput.focus();
+    lastClearedEntry = null;
+    clearTimeout(restoreTimer);
+    showToast("戻した");
   }
 
   function bindEvents() {
